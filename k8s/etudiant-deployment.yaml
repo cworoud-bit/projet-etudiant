@@ -1,0 +1,55 @@
+# Q6 — Kubernetes Deployment + Service pour l'API Étudiant
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etudiant-deployment
+  labels:
+    app: etudiant-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: etudiant-api
+  template:
+    metadata:
+      labels:
+        app: etudiant-api
+    spec:
+      containers:
+        - name: etudiant-api
+          image: <votre-username>/etudiant-service:1.0   # ← Remplacer par votre image Docker Hub
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-service:5432/etudiants_db
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: postgres
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis-service
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+          readinessProbe:
+            httpGet:
+              path: /api/etudiants
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etudiant-service
+spec:
+  selector:
+    app: etudiant-api
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
